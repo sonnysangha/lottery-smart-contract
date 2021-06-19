@@ -50,9 +50,12 @@ contract Lottery {
     function DrawWinnerTicket() public isOperator
     {
         require(tickets.length > 0, "No tickets were purchased");
-        uint256 randomNum = uint(blockhash(block.number)) % tickets.length;
         
-        address winner = tickets[randomNum];
+        bytes32 blockHash = blockhash(block.number - 1);
+        uint256 randomNumber = uint256(keccak256(abi.encodePacked(block.timestamp, blockHash)));
+        uint256 winingTicket =  randomNumber % tickets.length;
+        
+        address winner = tickets[winingTicket];
         winnings[winner] += ( tickets.length * (ticketPrice - ticketCommission) );
         operatorTotlaCommission += ( tickets.length * ticketCommission );
         delete tickets;
