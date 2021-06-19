@@ -6,11 +6,14 @@ pragma solidity >=0.7.0 <0.9.0;
 contract Lottery {
     
     uint256 public constant ticketPrice = 1 ether;
-    uint256 public constant maxTickets = 100;       // maximum tickets available per lottery
-    address public lotteryOperator;                 // the creator of the lottery
+    uint256 public constant maxTickets = 100;               // maximum tickets per lottery
+    uint256 public constant ticketCommission = 0.1 ether;   // commition per ticket 
+    address public lotteryOperator;                         // the crator of the lottery
+    uint256 public operatorTotlaCommission = 0;             // the total commission balance
     
-    mapping (address => uint256) winnings;          // maps the winners to their winnings
-    address[] tickets;                              // the array of purchased tickets
+    
+    mapping (address => uint256) winnings;          // maps the winners to there winnings
+    address[] tickets;                              //array of purchased Tickets
     
     
     // modifier to check if caller is the lottery operator
@@ -47,22 +50,28 @@ contract Lottery {
     function DrawWinnerTicket() public isOperator
     {
         require(tickets.length > 0, "No tickets were purchased");
-        uint256 randomNum = uint(blockhash(block.number-1)) % tickets.length;
+        uint256 randomNum = uint(blockhash(block.number)) % tickets.length;
         
         address winner = tickets[randomNum];
-        winnings[winner] += tickets.length;
+        winnings[winner] += ( tickets.length * (ticketPrice - ticketCommission) );
+        operatorTotlaCommission += ( tickets.length * ticketCommission );
         delete tickets;
     }
     
-    function Withdraw() public isWinner
+    function WithdrawWinnings() public isWinner
     {
         address payable winner = payable(msg.sender);
-        uint256 winningTickets = winnings[winner];
-        require(winningTickets > 0);
-        
+
+        require(winnings[winner] > 0);
+        winner.transfer(winnings[winner]);
         winnings[winner] = 0;
-        
-        winner.transfer(winningTickets * ticketPrice);
+    }
+    
+    function WithdrowCommission() public isOperator
+    {
+        address payable operator = payable(msg.sender);
+        operator.transfer(operatorTotlaCommission);
+        operatorTotlaCommission = 0;
     }
     
     function IsWinner() public view returns(bool)
@@ -78,5 +87,7 @@ contract Lottery {
     function RemainingTickets() public view returns(uint256)
     {
         return maxTickets - tickets.length;
-    }    
+    }
+        
+    
 }
