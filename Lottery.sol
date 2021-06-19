@@ -64,17 +64,20 @@ contract Lottery {
     function WithdrawWinnings() public isWinner
     {
         address payable winner = payable(msg.sender);
-
-        require(winnings[winner] > 0);
-        winner.transfer(winnings[winner]);
+        uint256 reward2Transfer = winnings[winner];
         winnings[winner] = 0;
+        
+        winner.transfer(reward2Transfer);
     }
     
     function WithdrowCommission() public isOperator
     {
         address payable operator = payable(msg.sender);
-        operator.transfer(operatorTotlaCommission);
-        operatorTotlaCommission = 0;
+        
+        uint256 commission2Transfer = operatorTotlaCommission;
+         operatorTotlaCommission = 0;
+        
+        operator.transfer(commission2Transfer);
     }
     
     function IsWinner() public view returns(bool)
