@@ -5,18 +5,13 @@ pragma solidity >=0.7.0 <0.9.0;
 
 contract Lottery {
     
-    uint256 public ticketPrice = 1000000000000000000; // Wei (1 Ether)
-    uint256 public maxTickets = 100;
-    uint256 public remainingTickets = 0;
+    uint256 public constant ticketPrice = 1 ether;
+    uint256 public constant maxTickets = 100;       // maximum tickets available per lottery
+    address public lotteryOperator;                 // the creator of the lottery
     
-    mapping (address => uint256) public winnings;
+    mapping (address => uint256) winnings;          // maps the winners to their winnings
+    address[] tickets;                              // the array of purchased tickets
     
-    address[] tickets;
-    
-    uint ticktCount = 0;
-    
-    address public lotteryOperator;
-    address public latestWinner;
     
     // modifier to check if caller is the lottery operator
     modifier isOperator() {
@@ -26,14 +21,13 @@ contract Lottery {
     
     // modifier to check if caller is a winner
     modifier isWinner() {
-        require(winnings[msg.sender] > 0, "Caller is not a winner");
+        require(IsWinner(), "Caller is not a winner");
         _;
     }
     
     constructor()
     {
-        lotteryOperator = msg.sender; 
-        remainingTickets = maxTickets;
+        lotteryOperator = msg.sender;
     }
     
     function BuyTickets() public payable
@@ -41,27 +35,22 @@ contract Lottery {
         require(msg.value % ticketPrice == 0, "the value must be multiple of 1 Ether");
         uint256 numOfTicketsToBuy = msg.value / ticketPrice;
         
-        require(numOfTicketsToBuy <= remainingTickets, "Not enough tickets available.");
-        remainingTickets -= numOfTicketsToBuy;
+        require(numOfTicketsToBuy < RemainingTickets(), "Not enough tickets available.");
         
         for (uint i = 0; i < numOfTicketsToBuy; i++)
         {
             tickets.push(msg.sender);
-            ticktCount++;
         }
         
     }
     
-    function DrawWinnerTicket() public //isOperator
+    function DrawWinnerTicket() public isOperator
     {
-        require(ticktCount > 0, "no tickets");
-        uint256 randomNum = uint(blockhash(block.number-1)) % ticktCount;
+        require(tickets.length > 0, "No tickets were purchased");
+        uint256 randomNum = uint(blockhash(block.number-1)) % tickets.length;
         
-        latestWinner = tickets[randomNum];
-        winnings[latestWinner] += ticktCount;
-        ticktCount = 0;
-        remainingTickets = maxTickets;
-        
+        address winner = tickets[randomNum];
+        winnings[winner] += tickets.length;
         delete tickets;
     }
     
@@ -74,7 +63,20 @@ contract Lottery {
         winnings[winner] = 0;
         
         winner.transfer(winningTickets * ticketPrice);
-    }  
-        
+    }
     
+    function IsWinner() public view returns(bool)
+    {
+        return winnings[msg.sender] > 0;
+    }
+    
+    function CurrentWinningReward() public view returns(uint256)
+    {
+        return tickets.length * ticketPrice;
+    }
+    
+    function RemainingTickets() public view returns(uint256)
+    {
+        return maxTickets - tickets.length;
+    }    
 }
