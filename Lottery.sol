@@ -13,12 +13,12 @@ contract Lottery {
     
     
     mapping (address => uint256) winnings;          // maps the winners to there winnings
-    address[] tickets;                              //array of purchased Tickets
+    address[] public tickets;                              //array of purchased Tickets
     
     
     // modifier to check if caller is the lottery operator
     modifier isOperator() {
-        require(msg.sender == lotteryOperator, "Caller is not the lottery operator");
+        require( (msg.sender == lotteryOperator) ), "Caller is not the lottery operator");
         _;
     }
     
@@ -38,13 +38,12 @@ contract Lottery {
         require(msg.value % ticketPrice == 0, "the value must be multiple of 1 Ether");
         uint256 numOfTicketsToBuy = msg.value / ticketPrice;
         
-        require(numOfTicketsToBuy < RemainingTickets(), "Not enough tickets available.");
+        require(numOfTicketsToBuy <= RemainingTickets(), "Not enough tickets available.");
         
         for (uint i = 0; i < numOfTicketsToBuy; i++)
         {
             tickets.push(msg.sender);
         }
-        
     }
     
     function DrawWinnerTicket() public isOperator
